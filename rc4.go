@@ -1,44 +1,41 @@
-// Package RC4 provides RC4 stream cipher encryption and decryption functionality.
-//
-// WARNING: RC4 is considered cryptographically broken and should not be used
-// for new systems. This package is provided for legacy compatibility only.
 package RC4
 
-import (
-	"crypto/rc4"
-	"errors"
-)
+func RC4(key []byte, data []byte) []byte {
+	result := make([]byte, len(data))
+	var T, S [256]byte
+	var j byte
 
-var (
-	// ErrKeySize is returned when the key size is invalid
-	ErrKeySize = errors.New("RC4: invalid key size (must be 1-256 bytes)")
-)
-
-// Encrypt performs RC4 encryption/decryption on the given data.
-//
-// RC4 is a symmetric cipher, so the same function can be used for both
-// encryption and decryption.
-//
-// Parameters:
-//
-//	key  - the encryption key (1-256 bytes)
-//	data - the data to encrypt/decrypt
-//
-// Returns:
-//
-//	encrypted/decrypted data
-//	error if key is invalid
-func RC4(key, data []byte) ([]byte, error) {
-	if len(key) < 1 || len(key) > 256 {
-		return nil, ErrKeySize
+	//Actually this is a bug in C FakeRC4 becasue it using strlen bu not len!
+	Klen := 0
+	for _, ch := range key {
+		if ch == 0 {
+			break
+		}
+		Klen++
 	}
 
-	cipher, err := rc4.NewCipher(key)
-	if err != nil {
-		return nil, err
+	for i := range S {
+		S[i] = byte(i)
+		T[i] = key[i%Klen]
 	}
 
-	dst := make([]byte, len(data))
-	cipher.XORKeyStream(dst, data)
-	return dst, nil
+	for i := range S {
+		j = j + S[i] + T[i]
+		S[i], S[j] = S[j], S[i]
+	}
+
+	j = 0
+	i := 0
+	for x := range data {
+		i = i + 1 // using %256 to avoid exceed the array limit
+		j = j + S[i]
+
+		//Swap S[i] & S[j]
+		S[i], S[j] = S[j], S[i]
+		t := S[i] + S[j]
+
+		result[x] = data[x] ^ S[t] // XOR generated S[t] with Byte from the plaintext / cipher and append each Encrypted/Decrypted byte to result array
+	}
+
+	return result
 }

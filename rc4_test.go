@@ -18,34 +18,12 @@ func TestRC4EncryptDecrypt(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			encrypted, err := RC4([]byte(tc.key), []byte(tc.data))
-			if err != nil {
-				t.Fatalf("Encryption failed: %v", err)
-			}
-
-			decrypted, err := RC4([]byte(tc.key), encrypted)
-			if err != nil {
-				t.Fatalf("Decryption failed: %v", err)
-			}
+			encrypted := RC4([]byte(tc.key), []byte(tc.data))
+			decrypted := RC4([]byte(tc.key), encrypted)
 
 			if string(decrypted) != tc.data {
 				t.Errorf("Decrypted data does not match original\nOriginal: %q\nDecrypted: %q", tc.data, decrypted)
 			}
 		})
-	}
-}
-
-func TestInvalidKey(t *testing.T) {
-	// 测试空密钥
-	_, err := RC4([]byte(""), []byte("test"))
-	if err == nil {
-		t.Error("Expected error for empty key, got nil")
-	}
-
-	// 测试过长密钥(超过256字节)
-	longKey := make([]byte, 257)
-	_, err = RC4(longKey, []byte("test"))
-	if err == nil {
-		t.Error("Expected error for too long key, got nil")
 	}
 }
